@@ -9,6 +9,7 @@ local defaultConfig = {
 	advanceTimePotionSuccess = true,
 	advanceTimePotionFail = true,
 	advanceTimeBarter = true,
+	advanceTimeChat = true,
 	advanceTimeNPCspellmaker = true,
 	advanceTimeNPCspell = true,
 	enchantSuccess_Modifier = 50,

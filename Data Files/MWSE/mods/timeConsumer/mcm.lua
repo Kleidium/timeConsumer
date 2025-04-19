@@ -8,34 +8,50 @@ template:register()
 
 
 
-local page = template:createSideBarPage({
-    label = "Settings",
-    description = "This mod passes time when the player enchants, repairs, performs alchemy, barters, or makes/buys a spell. Each feature can be enabled or disabled. Can be used alone for immersion or with other mods that introduce time-sensitive mechanics. All sliders are in tenths of an hour (A value of 10 = 1 hour, 55 = 5.5 hours, 3 = 0.3 hours). \n\n By Kleidium."
-})
 
+local function createPage(label)
+	local page = template:createSideBarPage{
+		label = label,
+		noScroll = false,
+	}
+	page.sidebar:createInfo{
+		text = "                         -Time Consumer- \n\nThis mod passes time when the player enchants, repairs, performs alchemy, barters, chats, or makes/buys a spell. Each feature can be enabled or disabled. Can be used alone for immersion or with other mods that introduce time-sensitive mechanics. \n\nAll sliders are in tenths of an hour (A value of 10 = 1 hour, 55 = 5.5 hours, 3 = 0.3 hours)."
+	}
+	page.sidebar:createHyperLink {
+		text = "Made by Kleidium",
+		exec = "start https://www.nexusmods.com/users/5374229?tab=user+files",
+		postCreate = function(self)
+			self.elements.outerContainer.borderAllSides = self.indent
+			self.elements.outerContainer.alignY = 1.0
+			self.elements.info.layoutOriginFractionX = 0.5
+		end,
+	}
+	return page
+end
 
-local settings = page:createCategory("Enchant Settings")
+local settings = createPage("Settings")
+local enchSettings = settings:createCategory("Enchantment Settings")
 
-settings:createOnOffButton{
-    label = "Enable Consumed Time on Enchant Success",
+enchSettings:createOnOffButton{
+    label = "Enable Consumed Time on Enchantment Success",
     description = "Turn on or off time consumption when the player successfully enchants an item.",
     variable = mwse.mcm.createTableVariable{ id = "advanceTimeEnchantSuccess", table = config }
 }
 
-settings:createOnOffButton{
-    label = "Enable Consumed Time on Enchant Failure",
+enchSettings:createOnOffButton{
+    label = "Enable Consumed Time on Enchantment Failure",
     description = "Turn on or off time consumption when the player fails to enchant an item.",
     variable = mwse.mcm.createTableVariable{ id = "advanceTimeEnchantFail", table = config }
 }
 
-settings:createOnOffButton{
+enchSettings:createOnOffButton{
     label = "Enable Consumed Time on NPC Enchanting",
     description = "Turn on or off time consumption when the player employs the services of an enchanter.",
     variable = mwse.mcm.createTableVariable{ id = "advanceTimeNPCenchant", table = config }
 }
 
-settings:createOnOffButton{
-    label = "Enable Consumed Time on Enchant Recharge",
+enchSettings:createOnOffButton{
+    label = "Enable Consumed Time on Enchantment Recharge",
     description = "Turn on or off time consumption when the player uses a soul gem to recharge an item.",
     variable = mwse.mcm.createTableVariable{ id = "advanceTimeRecharge", table = config }
 }
@@ -44,8 +60,8 @@ settings:createOnOffButton{
 local enchantTime = settings:createCategory("Enchanting Base Time")
 
 enchantTime:createSlider{
-    label = "Base Enchant time for a successful enchant",
-    description = "Set how much base time successful Enchants take before considering skill. Once skill is considered, the time consumed can be roughly anywhere between +40% to -60% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 5 hour(s) before skill consideration.",
+    label = "Base Enchant time for a successful enchantment",
+    description = "Set how much base time successful Enchants take before considering skill. \n\nOnce skill is considered, the time consumed can be roughly the same as base or as low as 60% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 5 hour(s) before skill consideration.",
     max = 120,
     min = 1,
     variable = EasyMCM:createTableVariable{
@@ -55,8 +71,8 @@ enchantTime:createSlider{
 }
 
 enchantTime:createSlider{
-    label = "Base Enchant time for a failed enchant",
-    description = "Set how much base time failed Enchants take before considering skill. Once skill is considered, the time consumed can be roughly anywhere between +40% to -60% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 2.5 hour(s) before skill consideration.",
+    label = "Base Enchant time for a failed enchantment",
+    description = "Set how much base time failed Enchants take before considering skill. \n\nOnce skill is considered, the time consumed can be roughly the same as base or as low as 60% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 2.5 hour(s) before skill consideration.",
     max = 120,
     min = 1,
     variable = EasyMCM:createTableVariable{
@@ -67,7 +83,7 @@ enchantTime:createSlider{
 
 enchantTime:createSlider{
     label = "Enchant time when employing an enchanter",
-    description = "Set how much time enchanting takes when the player employs the services of an enchanter. \n\nDefault: 4 hour(s).",
+    description = "Set how much time enchanting takes when the player employs the services of an enchanter before considering the enchanter's skill. \n\nOnce skill is considered, the time consumed can be roughly the same as base or as low as 60% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count)  \n\nDefault: 4 hour(s) before skill consideration.",
     max = 120,
     min = 1,
     variable = EasyMCM:createTableVariable{
@@ -77,8 +93,8 @@ enchantTime:createSlider{
 }
 
 enchantTime:createSlider{
-    label = "Base Enchant time when using a soul gem to recharge enchanted items",
-    description = "Set how much base time recharge takes before considering skill. Once skill is considered, the time consumed can be roughly the same as base or as low as 10% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 0.5 hour(s).",
+    label = "Base Enchantment recharge time when using a soul gem to recharge enchanted items",
+    description = "Set how much base time recharge takes before considering skill. \n\nOnce skill is considered, the time consumed can be roughly the same as base or as low as 33% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 0.5 hour(s).",
     max = 120,
     min = 1,
     variable = EasyMCM:createTableVariable{
@@ -104,7 +120,7 @@ repairTime:createOnOffButton{
 
 repairTime:createSlider{
     label = "Base Repair time for on attempted repair",
-    description = "Set how much base time attempted repairs take before considering skill. Once skill is considered, the time consumed can be roughly the same as base or as low as 10% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 0.3 hour(s).",
+    description = "Set how much base time attempted repairs take before considering skill. \n\nOnce skill is considered, the time consumed can be roughly the same as base or as low as 20% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 0.3 hour(s).",
     max = 120,
     min = 1,
     variable = EasyMCM:createTableVariable{
@@ -141,7 +157,7 @@ alchemyTime:createOnOffButton{
 
 alchemyTime:createSlider{
     label = "Base Alchemy time for a potion success",
-    description = "Set how much base time alchemy successes take before considering skill. Once skill is considered, the time consumed can be roughly the same as base or as low as 10% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 1 hour(s) before skill consideration.",
+    description = "Set how much base time alchemy successes take before considering skill. \n\nOnce skill is considered, the time consumed can be roughly the same as base or as low as 33% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 1 hour(s) before skill consideration.",
     max = 120,
     min = 1,
     variable = EasyMCM:createTableVariable{
@@ -152,7 +168,7 @@ alchemyTime:createSlider{
 
 alchemyTime:createSlider{
     label = "Base Alchemy time for a potion failure",
-    description = "Set how much base time alchemy failures take before considering skill. Once skill is considered, the time consumed can be roughly the same as base or as low as 10% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 1 hour(s) before skill consideration.",
+    description = "Set how much base time alchemy failures take before considering skill. \n\nOnce skill is considered, the time consumed can be roughly the same as base or as low as 33% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 1 hour(s) before skill consideration.",
     max = 120,
     min = 1,
     variable = EasyMCM:createTableVariable{
@@ -178,7 +194,7 @@ npcSpellTime:createOnOffButton{
 
 npcSpellTime:createSlider{
     label = "Spellmaking time when employing a spellmaker",
-    description = "Set how much time spellmaking takes when the player employs the services of a spellmaker before considering intelligence. Every 10 points of intelligence reduces this amount by roughly 0.2 hours. \n\nDefault: 6 hour(s) before intelligence consideration.",
+    description = "Set how much time spellmaking takes when the player employs the services of a spellmaker before considering intelligence. \n\nOnce intelligence is considered, the time consumed can be roughly the same as base or as low as 75% of base time, hours. (Based on 0-100 Attribute Range, beyond 100 will still count) \n\nDefault: 6 hour(s) before intelligence consideration.",
     max = 120,
     min = 1,
     variable = EasyMCM:createTableVariable{
@@ -189,7 +205,7 @@ npcSpellTime:createSlider{
 
 npcSpellTime:createSlider{
     label = "Spell learning time when buying pre made spells",
-    description = "Set how much time learning pre made spells takes when the player employs the services of a spell trader before considering intelligence. Once intelligence is considered, the time consumed can be roughly the same as base or as low as 10% of base time, in hours. (Based on 0-100 Skill Range, beyond 100 will still count) \n\nDefault: 1 hour(s) before intelligence consideration.",
+    description = "Set how much time learning pre made spells takes when the player employs the services of a spell trader before considering intelligence. \n\nOnce intelligence is considered, the time consumed can be roughly the same as base or as low as 33% of base time, in hours. (Based on 0-100 Attribute Range, beyond 100 will still count) \n\nDefault: 1 hour(s) before intelligence consideration.",
     max = 120,
     min = 1,
     variable = EasyMCM:createTableVariable{
@@ -199,12 +215,18 @@ npcSpellTime:createSlider{
 }
 
 
-local barterTime = settings:createCategory("Barter Settings")
+local barterTime = settings:createCategory("Social Settings")
 
 barterTime:createOnOffButton{
-    label = "Enable Consumed Time on Bartering",
-    description = [[Turn on or off time consumption when the player buys and sells items.]],
+    label = "Enable Consumed Time when Bartering",
+    description = [[Turn on or off time consumption when the player buys and sells items. Each instance of selecting an item to buy or sell as well as making an offer consumes 1 minute.]],
     variable = mwse.mcm.createTableVariable{ id = "advanceTimeBarter", table = config }
+}
+
+barterTime:createOnOffButton{
+    label = "Enable Consumed Time when Talking",
+    description = [[Turn on or off time consumption when the player asks about a topic, gives a response, attempts persuasion, or is refused service. Each instance of speaking takes 1-3 minutes.]],
+    variable = mwse.mcm.createTableVariable{ id = "advanceTimeChat", table = config }
 }
 
 
