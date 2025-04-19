@@ -5,7 +5,8 @@ stuff.mystFlavor = {
     [2] = "Something inside you stirs. You have a sudden epiphany regarding the nature of Mysticism.",
     [3] = "Even the formless can be perceived. The spellmaker made this tenet of Mysticism very clear to you.",
     [4] = "You perceive something unexplainable within the mystic's actions. Unexplainable...yet useful.",
-    [5] = "The mystic appears to tap into something within themselves. This makes you think on improving your Mysticism."
+    [5] = "The mystic appears to tap into something within themselves. This makes you think on improving your Mysticism.",
+    [6] = "You've gained some experience in Mysticism through observation."
 }
 
 stuff.destFlavor = {
@@ -13,7 +14,8 @@ stuff.destFlavor = {
     [2] = "There is a charge in the air. You realize it has something to do the Destructive property of the spellmaker's magicka.",
     [3] = "Due to the spellmaker's example, you feel like you understand more about how things are destroyed by sheer will.",
     [4] = "Destruction is change. Change is but a part of nature.",
-    [5] = "Destructive magic never made as much sense to you as it does now. This is likely from watching the mage at work."
+    [5] = "Destructive magic never made as much sense to you as it does now. This is likely from watching the mage at work.",
+    [6] = "You've gained some experience in Destruction through observation."
 }
 
 stuff.altFlavor = {
@@ -21,7 +23,8 @@ stuff.altFlavor = {
     [2] = "The space in front of you seems different somehow. You realize Alteration is the cause.",
     [3] = "You learn from the spellmaker's lesson. The world can be altered.",
     [4] = "Alteration must be used to bend reality, not break it.",
-    [5] = "The mage takes the time to show you how Alteration is used to turn \"no\" into \"yes\"."
+    [5] = "The mage takes the time to show you how Alteration is used to turn \"no\" into \"yes\".",
+    [6] = "You've gained some experience in Alteration through observation."
 }
 
 stuff.restFlavor = {
@@ -29,7 +32,8 @@ stuff.restFlavor = {
     [2] = "Your body twitches at the light of the spellmaker's magicka. You assume Restoration brought this response about.",
     [3] = "The ability to return what has been lost is the ultimate gift of Restoration. This has been impressed upon you.",
     [4] = "It appears that Restoration is capable of mending far more than mere flesh. You'll remember this.",
-    [5] = "Restoration rebuilds, fortifies...amplifies. The mage before you demonstrated this."
+    [5] = "Restoration rebuilds, fortifies...amplifies. The mage before you demonstrated this.",
+    [6] = "You've gained some experience in Restoration through observation."
 }
 
 stuff.illFlavor = {
@@ -37,7 +41,8 @@ stuff.illFlavor = {
     [2] = "You've never seen such a color before. It must surely be a trick of the mind caused by Illusory magicks.",
     [3] = "You were surprised by a sudden sound. It seemed only you heard it. The spellmaker assured you it was just an Illusion.",
     [4] = "Something illusory stirs at the edge of your consciousness for but a moment. You couldn't tell if it was real or not.",
-    [5] = "The illusionist showed you a trick. Strangely, you can barely remember it."
+    [5] = "The illusionist showed you a trick. Strangely, you can barely remember it.",
+    [6] = "You've gained some experience in Illusion through observation."
 }
 
 stuff.conjFlavor = {
@@ -45,7 +50,8 @@ stuff.conjFlavor = {
     [2] = "You sense a connection to something far, far away. Could this be related to the spellmaker's Conjuration?",
     [3] = "The conjurer calls out to Oblivion. It answers, and whispers of power fill your mind for but a moment.",
     [4] = "The conjuring performed before you alerted you to a presence both near and far away...yet you see nothing.",
-    [5] = "Conjuration is borrowed power. You were implored to always remember this."
+    [5] = "Conjuration is borrowed power. You were implored to always remember this.",
+    [6] = "You've gained some experience in Conjuration through observation."
 }
 
 stuff.repairFlavor = {

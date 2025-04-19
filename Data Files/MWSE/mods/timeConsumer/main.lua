@@ -105,7 +105,7 @@ local function enchantByNPC(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(9, 1)
-                    tes3.messageBox(strings.enchFlavor[math.random(1, 6)])
+                    tes3.messageBox(strings.enchFlavor[math.random(1, #strings.enchFlavor)])
                 end
             end
         end
@@ -123,8 +123,8 @@ event.register(tes3.event.enchantedItemCreated, enchantByNPC)
 local function enchantRecharge(e)
     log:trace("enchantRecharge function triggered.")
     if not tes3ui.menuMode() then return end
-    local topMenu = tes3ui.getMenuOnTop()
-    if topMenu.name ~= "MenuRepair" then return end
+    --local topMenu = tes3ui.getMenuOnTop()
+    --if topMenu.name ~= "MenuInventorySelect" then return end
     if e.skill ~= tes3.skill.enchant then return end
     if config.advanceTimeRecharge ~= true then return end
     local baseRecharge = (config.recharge_Modifier * 0.1)
@@ -201,7 +201,7 @@ local function onRepairService(e)
                 local chance = math.random(1, 100)
                 if chance <= 10 then
                     tes3.player.mobile:exerciseSkill(1, 1)
-                    tes3.messageBox(strings.repairFlavor[math.random(1, 6)])
+                    tes3.messageBox(strings.repairFlavor[math.random(1, #strings.repairFlavor)])
                 end
             end
         end
@@ -307,7 +307,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(14, 1)
-                    tes3.messageBox(strings.mystFlavor[math.random(1, 5)])
+                    tes3.messageBox(strings.mystFlavor[math.random(1, #strings.mystFlavor)])
                 end
             end
         end
@@ -325,7 +325,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(10, 1)
-                    tes3.messageBox(strings.destFlavor[math.random(1, 5)])
+                    tes3.messageBox(strings.destFlavor[math.random(1, #strings.destFlavor)])
                 end
             end
         end
@@ -340,7 +340,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(11, 1)
-                    tes3.messageBox(strings.altFlavor[math.random(1, 5)])
+                    tes3.messageBox(strings.altFlavor[math.random(1, #strings.altFlavor)])
                 end
             end
         end
@@ -358,7 +358,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(15, 1)
-                    tes3.messageBox(strings.restFlavor[math.random(1, 5)])
+                    tes3.messageBox(strings.restFlavor[math.random(1, #strings.restFlavor)])
                 end
             end
         end
@@ -374,7 +374,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(12, 1)
-                    tes3.messageBox(strings.illFlavor[math.random(1, 5)])
+                    tes3.messageBox(strings.illFlavor[math.random(1, #strings.illFlavor)])
                 end
             end
         end
@@ -393,7 +393,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(13, 1)
-                    tes3.messageBox(strings.conjFlavor[math.random(1, 5)])
+                    tes3.messageBox(strings.conjFlavor[math.random(1, #strings.conjFlavor)])
                 end
             end
         end
@@ -454,9 +454,18 @@ end
 local function npcBarter(e)
     log:trace("npcBarter function triggered.")
     if config.advanceTimeBarter ~= true then return end
+    if tes3.menuMode() == false then log:debug("Menu Mode check failed.") return end
+    log:debug("Menu Mode check succeeded.")
+
+    local topMenu = tes3ui.getMenuOnTop()
+    if topMenu.name ~= "MenuBarter" then log:debug("Barter Menu check failed.") return end
+    log:debug("Barter Menu check succeeded.")
+
     local gameHour = tes3.getGlobal('GameHour')
     gameHour = gameHour + (1 / 60)
     tes3.setGlobal('GameHour', gameHour)
+    log:info("Bartering. Time passed to " .. math.round(gameHour, 2) .. ".")
+
     if config.restMode == true then
         local pFatigue = tes3.player.mobile.fatigue
         local fortifyEffect = tes3.getEffectMagnitude({
@@ -473,7 +482,6 @@ local function npcBarter(e)
         tes3.setStatistic({ name = "fatigue", current = fatigueFinal, reference = tes3.mobilePlayer })
         log:info("Resting while bartering. " .. percentRest .. " fatigue restored.")
     end
-    log:info("Bartering. Time passed to " .. math.round(gameHour, 2) .. ".")
 end
 
 event.register(tes3.event.calcBarterPrice, npcBarter)

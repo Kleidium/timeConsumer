@@ -279,13 +279,13 @@ local barterTime = npcSettings:createCategory("Social Settings")
 
 barterTime:createOnOffButton {
     label = "Enable Consumed Time when Bartering",
-    description = [[Turn on or off time consumption when the player buys and sells items. Each instance of selecting an item to buy or sell as well as making an offer consumes 1 minute.]],
+    description = [[Turn on or off time consumption when the player buys items. Each instance of selecting an item to buy or making an offer consumes 1 minute.]],
     variable = mwse.mcm.createTableVariable { id = "advanceTimeBarter", table = config }
 }
 
 barterTime:createOnOffButton {
     label = "Enable Consumed Time when Talking",
-    description = [[Turn on or off time consumption when the player asks about a topic, gives a response, attempts persuasion, or is refused service. Each instance of speaking takes 1-3 minutes by default, configurable below.]],
+    description = [[Turn on or off time consumption when the player asks about a topic, gives a response, attempts persuasion, or is refused service. Each instance of speaking consumes 1-3 minutes by default, configurable below.]],
     variable = mwse.mcm.createTableVariable { id = "advanceTimeChat", table = config }
 }
 
