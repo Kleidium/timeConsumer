@@ -22,7 +22,11 @@ local defaultConfig = {
 	potionFail_Modifier = 10,
 	npcSpellTime_Modifier = 60,
 	spellNPC_Modifier = 10,
-	debugMode = false
+	chatMin = 1,
+	chatMax = 3,
+	restMode = true,
+	trainSkill = true,
+	logLevel = "NONE"
 
 }
 
