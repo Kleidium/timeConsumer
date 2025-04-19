@@ -15,20 +15,18 @@ end
 
 event.register("initialized", initialized)
 
-local initialTrigger = false
-local initialSTrigger = false
-local spellFlag = 1
-local repairFlag = 1
-local repairNPCflag = 1
+
+--Used to ensure repair attempts aren't triggered in MenuMessage
 local repairTrigger = 1
 
 
 
 
 
---Enchanting--
+--Enchanting---------------------------------------------------------------------------------------------------------------
 
 local function enchantSuccessAttempt(e)
+    log:trace("enchantSuccessAttempt function triggered.")
     if e.enchanter ~= tes3.mobilePlayer then return end
     if config.advanceTimeEnchantSuccess == true then
         local baseEsuccess = (config.enchantSuccess_Modifier * 0.1)
@@ -50,6 +48,7 @@ end
 event.register(tes3.event.enchantedItemCreated, enchantSuccessAttempt)
 
 local function enchantFailAttempt(e)
+    log:trace("enchantFailAttempt function triggered.")
     if e.enchanter ~= tes3.mobilePlayer then return end
     if config.advanceTimeEnchantFail == true then
         local baseEfail = (config.enchantFail_Modifier * 0.1)
@@ -71,6 +70,7 @@ end
 event.register(tes3.event.enchantedItemCreateFailed, enchantFailAttempt)
 
 local function enchantByNPC(e)
+    log:trace("enchantByNPC function triggered.")
     if e.enchanter == tes3.mobilePlayer then return end
     local npcRef = e.enchanterReference
     if config.advanceTimeNPCenchant == true then
@@ -84,10 +84,15 @@ local function enchantByNPC(e)
         gameHour = (gameHour + enchantTime)
         tes3.setGlobal('GameHour', gameHour)
         if config.restMode == true then
-            local fatigue = tes3.player.mobile.fatigue.current
-            local fatigueMax = tes3.player.mobile.fatigue.base
+            local pFatigue = tes3.player.mobile.fatigue
+            local fortifyEffect = tes3.getEffectMagnitude({
+                reference = tes3.player,
+                effect = tes3.effect.fortifyFatigue,
+            })
+            log:debug("Fortify Fatigue magnitude: " .. fortifyEffect .. ".")
+            local fatigueMax = (pFatigue.base + fortifyEffect)
             local percentRest = (math.round(((fatigueMax * 0.01) * (enchantTime * 100)), 0))
-            local fatigueFinal = (fatigue + percentRest)
+            local fatigueFinal = (pFatigue.current + percentRest)
             if fatigueFinal > fatigueMax then
                 fatigueFinal = fatigueMax
             end
@@ -100,8 +105,7 @@ local function enchantByNPC(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(9, 1)
-                    tes3.messageBox("You observed " ..
-                        npcRef.object.name .. " at work, and learned a bit about Enchanting.")
+                    tes3.messageBox(strings.enchFlavor[math.random(1, 6)])
                 end
             end
         end
@@ -117,6 +121,10 @@ end
 event.register(tes3.event.enchantedItemCreated, enchantByNPC)
 
 local function enchantRecharge(e)
+    log:trace("enchantRecharge function triggered.")
+    if not tes3ui.menuMode() then return end
+    local topMenu = tes3ui.getMenuOnTop()
+    if topMenu.name ~= "MenuRepair" then return end
     if e.skill ~= tes3.skill.enchant then return end
     if config.advanceTimeRecharge ~= true then return end
     local baseRecharge = (config.recharge_Modifier * 0.1)
@@ -133,11 +141,14 @@ local function enchantRecharge(e)
         ". Time Reduction: " .. (enchantOffset * 100) .. " percent. Time passed to " .. math.round(gameHour, 2) .. ".")
 end
 
---Repairs--
+--Player Repairs--------------------------------------------------------------------------------------------------------------------
 
-local function repairAttemptReal(e)
-    if repairFlag == 0 then return end
-    if repairTrigger == 0 then return end
+local function onRepairAttempt(e)
+    log:trace("onRepairAttempt function triggered.")
+    if not tes3ui.menuMode() then return end
+    local topMenu = tes3ui.getMenuOnTop()
+    if topMenu.name ~= "MenuRepair" then return end
+    if repairTrigger == 0 then repairTrigger = 1 return end
     if config.advanceTimeRepairAttempt ~= true then return end
     local baseRattempt = (config.repairAttempt_Modifier * 0.1)
     local gameHour = tes3.getGlobal('GameHour')
@@ -153,121 +164,58 @@ local function repairAttemptReal(e)
         ". Time Reduction: " .. (armorerOffset * 100) .. " percent. Time passed to " .. math.round(gameHour, 2) .. ".")
 end
 
-local function repairAttemptBridge(e)
-    if config.advanceTimeRepairAttempt == true then
-        repairFlag = 1
-        if event.isRegistered(tes3.event.uiActivated, repairAttemptReal) then return end
-        event.register(tes3.event.uiActivated, repairAttemptReal)
-    end
-end
+--NPC Repairs-------------------------------------------------------------------------------------------------------------
 
-local function repairAttempt(e)
-    local closeRButton = e.element:findChild(tes3ui.registerID("MenuRepair_Okbutton"))
-    closeRButton:registerAfter("mouseDown", function()
-        event.unregister(tes3.event.exerciseSkill, enchantRecharge)
-        repairFlag = 0
-        repairTrigger = 1
-    end)
-    if config.advanceTimeRepairAttempt == true then
-        timer.start({ duration = 1, callback = repairAttemptBridge, type = timer.real })
-    end
-    if event.isRegistered(tes3.event.exerciseSkill, enchantRecharge) then return end
-    event.register(tes3.event.exerciseSkill, enchantRecharge)
-end
-
-event.register(tes3.event.uiActivated, repairAttempt, { filter = "MenuRepair" })
-
-local function menuMessage(e)
-    repairTrigger = 0
-end
-
-event.register(tes3.event.uiActivated, menuMessage, { filter = "MenuMessage" })
-
-local function repairEnable(e)
-    repairTrigger = 1
-    if event.isRegistered(tes3.event.exerciseSkill, enchantRecharge) then
-        event.unregister(tes3.event.exerciseSkill, enchantRecharge)
-    end
-end
-
-event.register(tes3.event.menuExit, repairEnable)
-
----------------------------------------------------------------------------------------------------------------
-
-local function haltTrigger(e)
-    initialTrigger = false
-end
-
-local function repairByNPCreal(e)
-    if repairNPCflag == 0 then return end
+local function onRepairService(e)
+    log:trace("onRepairService function triggered.")
     if config.advanceTimeNPCrepair == true then
-        if not initialTrigger then
-            initialTrigger = true
-            local npcMob = tes3ui.getServiceActor()
-            local baseNPCrepair = (config.repairNPC_Modifier * 0.1)
-            local armorerOffset = (npcMob.armorer.current / 125)
-            local repairTime = (baseNPCrepair * (1 - armorerOffset))
-            local gameHour = tes3.getGlobal('GameHour')
-            if repairTime < 0.02 then
-                repairTime = 0.02
-            end
-            gameHour = (gameHour + repairTime)
-            tes3.setGlobal('GameHour', gameHour)
-            if config.restMode == true then
-                local fatigue = tes3.player.mobile.fatigue.current
-                local fatigueMax = tes3.player.mobile.fatigue.base
-                local percentRest = (math.round(((fatigueMax * 0.01) * (repairTime * 100)), 0))
-                local fatigueFinal = (fatigue + percentRest)
-                if fatigueFinal > fatigueMax then
-                    fatigueFinal = fatigueMax
-                end
-                tes3.setStatistic({ name = "fatigue", current = fatigueFinal, reference = tes3.mobilePlayer })
-                log:debug("Resting while NPC repairs gear. " .. percentRest .. " fatigue restored.")
-            end
-            if config.trainSkill == true then
-                local armorer = tes3.player.mobile.armorer.base
-                if armorer < 25 then
-                    local chance = math.random(1, 100)
-                    if chance <= 10 then
-                        tes3.player.mobile:exerciseSkill(1, 1)
-                        tes3.messageBox(strings.repairFlavor[math.random(1, 3)])
-                    end
-                end
-            end
-            timer.delayOneFrame(haltTrigger, timer.real)
-            log:info("Repair Services rendered. NPC Armorer skill: " ..
-                npcMob.armorer.current ..
-                ". Time Reduction: " ..
-                (armorerOffset * 100) .. " percent. Time passed to " .. math.round(gameHour, 2) .. ".")
+        local npcMob = tes3ui.getServiceActor()
+        local baseNPCrepair = (config.repairNPC_Modifier * 0.1)
+        local armorerOffset = (npcMob.armorer.current / 125)
+        local repairTime = (baseNPCrepair * (1 - armorerOffset))
+        local gameHour = tes3.getGlobal('GameHour')
+        if repairTime < 0.02 then
+            repairTime = 0.02
         end
+        gameHour = (gameHour + repairTime)
+        tes3.setGlobal('GameHour', gameHour)
+        if config.restMode == true then
+            local pFatigue = tes3.player.mobile.fatigue
+            local fortifyEffect = tes3.getEffectMagnitude({
+                reference = tes3.player,
+                effect = tes3.effect.fortifyFatigue,
+            })
+            log:debug("Fortify Fatigue magnitude: " .. fortifyEffect .. ".")
+            local fatigueMax = (pFatigue.base + fortifyEffect)
+            local percentRest = (math.round(((fatigueMax * 0.01) * (repairTime * 100)), 0))
+            local fatigueFinal = (pFatigue.current + percentRest)
+            if fatigueFinal > fatigueMax then
+                fatigueFinal = fatigueMax
+            end
+            tes3.setStatistic({ name = "fatigue", current = fatigueFinal, reference = tes3.mobilePlayer })
+            log:debug("Resting while NPC repairs gear. " .. percentRest .. " fatigue restored.")
+        end
+        if config.trainSkill == true then
+            local armorer = tes3.player.mobile.armorer.base
+            if armorer < 25 then
+                local chance = math.random(1, 100)
+                if chance <= 10 then
+                    tes3.player.mobile:exerciseSkill(1, 1)
+                    tes3.messageBox(strings.repairFlavor[math.random(1, 6)])
+                end
+            end
+        end
+        log:info("Repair Services rendered. NPC Armorer skill: " ..
+            npcMob.armorer.current ..
+            ". Time Reduction: " ..
+            (armorerOffset * 100) .. " percent. Time passed to " .. math.round(gameHour, 2) .. ".")
     end
 end
 
-local function repairByNPCbridge(e)
-    repairNPCflag = 1
-    if event.isRegistered(tes3.event.uiActivated, repairByNPCreal, { filter = "MenuServiceRepair" }) then return end
-    if config.advanceTimeNPCrepair == true then
-        event.register(tes3.event.uiActivated, repairByNPCreal, { filter = "MenuServiceRepair" })
-    end
-end
-
-local function repairByNPC(e)
-    local closeButton = e.element:findChild(tes3ui.registerID("MenuServiceRepair_Okbutton"))
-    closeButton:registerAfter("mouseDown", function()
-        repairNPCflag = 0
-    end)
-    if config.advanceTimeNPCrepair == true then
-        timer.start({ duration = 1, callback = repairByNPCbridge, type = timer.real })
-    end
-end
-
-event.register(tes3.event.uiActivated, repairByNPC, { filter = "MenuServiceRepair" })
-
-
-
---Alchemy--
+--Alchemy-------------------------------------------------------------------------------------------------------------------
 
 local function potionSuccessAttempt(e)
+    log:trace("potionSuccessAttempt function triggered.")
     if config.advanceTimePotionSuccess == true then
         local baseAsuccess = (config.potionSuccess_Modifier * 0.1)
         local gameHour = tes3.getGlobal('GameHour')
@@ -288,6 +236,7 @@ end
 event.register(tes3.event.potionBrewed, potionSuccessAttempt)
 
 local function potionFailAttempt(e)
+    log:trace("potionFailAttempt function triggered.")
     if config.advanceTimePotionFail == true then
         local baseAfail = (config.potionFail_Modifier * 0.1)
         local gameHour = tes3.getGlobal('GameHour')
@@ -309,9 +258,10 @@ event.register(tes3.event.potionBrewFailed, potionFailAttempt)
 
 
 
---Spellmaking--
+--Spellmaking--------------------------------------------------------------------------------------------------------------------------
 
 local function npcSpellmaker(e)
+    log:trace("npcSpellmaker function triggered.")
     if config.advanceTimeNPCspellmaker ~= true then return end
     if e.source ~= tes3.spellSource.service then return end
     local npcMob = tes3ui.getServiceActor()
@@ -327,10 +277,15 @@ local function npcSpellmaker(e)
     gameHour = (gameHour + spellmakeTime)
     tes3.setGlobal('GameHour', gameHour)
     if config.restMode == true then
-        local fatigue = tes3.player.mobile.fatigue.current
-        local fatigueMax = tes3.player.mobile.fatigue.base
+        local pFatigue = tes3.player.mobile.fatigue
+        local fortifyEffect = tes3.getEffectMagnitude({
+            reference = tes3.player,
+            effect = tes3.effect.fortifyFatigue,
+        })
+        log:debug("Fortify Fatigue magnitude: " .. fortifyEffect .. ".")
+        local fatigueMax = (pFatigue.base + fortifyEffect)
         local percentRest = (math.round(((fatigueMax * 0.01) * (spellmakeTime * 100)), 0))
-        local fatigueFinal = (fatigue + percentRest)
+        local fatigueFinal = (pFatigue.current + percentRest)
         if fatigueFinal > fatigueMax then
             fatigueFinal = fatigueMax
         end
@@ -352,7 +307,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(14, 1)
-                    tes3.messageBox(strings.mystFlavor[math.random(1, 3)])
+                    tes3.messageBox(strings.mystFlavor[math.random(1, 5)])
                 end
             end
         end
@@ -370,7 +325,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(10, 1)
-                    tes3.messageBox(strings.destFlavor[math.random(1, 3)])
+                    tes3.messageBox(strings.destFlavor[math.random(1, 5)])
                 end
             end
         end
@@ -385,7 +340,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(11, 1)
-                    tes3.messageBox(strings.altFlavor[math.random(1, 3)])
+                    tes3.messageBox(strings.altFlavor[math.random(1, 5)])
                 end
             end
         end
@@ -403,7 +358,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(15, 1)
-                    tes3.messageBox(strings.restFlavor[math.random(1, 3)])
+                    tes3.messageBox(strings.restFlavor[math.random(1, 5)])
                 end
             end
         end
@@ -419,7 +374,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(12, 1)
-                    tes3.messageBox(strings.illFlavor[math.random(1, 3)])
+                    tes3.messageBox(strings.illFlavor[math.random(1, 5)])
                 end
             end
         end
@@ -438,7 +393,7 @@ local function npcSpellmaker(e)
                 local chance = math.random(1, 100)
                 if chance <= 40 then
                     tes3.player.mobile:exerciseSkill(13, 1)
-                    tes3.messageBox(strings.conjFlavor[math.random(1, 3)])
+                    tes3.messageBox(strings.conjFlavor[math.random(1, 5)])
                 end
             end
         end
@@ -454,83 +409,64 @@ end
 
 event.register(tes3.event.spellCreated, npcSpellmaker)
 
--------------------------------------------------------------------------------------------------------------
+--Spell Purchasing-----------------------------------------------------------------------------------------------------------
 
-local function haltSTrigger(e)
-    initialSTrigger = false
-end
-
-local function spellByNPCreal(e)
-    if spellFlag == 0 then return end
+local function onSpellService(e)
+    log:trace("onSpellService function triggered.")
     if config.advanceTimeNPCspell == true then
-        if not initialSTrigger then
-            initialSTrigger = true
-            local baseNPCspell = (config.spellNPC_Modifier * 0.1)
-            local npcMob = tes3ui.getServiceActor()
-            local intelligenceOffsetNPC = (npcMob.intelligence.current / 500)
-            local intelligenceOffsetPlayer = (tes3.mobilePlayer.intelligence.current / 200)
-            local totalOffset = intelligenceOffsetNPC + intelligenceOffsetPlayer
-            local gameHour = tes3.getGlobal('GameHour')
-            local spellTime = (baseNPCspell * (1 - totalOffset))
-            if spellTime < 0.02 then
-                spellTime = 0.02
-            end
-            gameHour = (gameHour + spellTime)
-            tes3.setGlobal('GameHour', gameHour)
-            if config.restMode == true then
-                local fatigue = tes3.player.mobile.fatigue.current
-                local fatigueMax = tes3.player.mobile.fatigue.base
-                local percentRest = (math.round(((fatigueMax * 0.01) * (spellTime * 100)), 0))
-                local fatigueFinal = (fatigue + percentRest)
-                if fatigueFinal > fatigueMax then
-                    fatigueFinal = fatigueMax
-                end
-                tes3.setStatistic({ name = "fatigue", current = fatigueFinal, reference = tes3.mobilePlayer })
-                log:debug("Resting while NPC teaches spell. " .. percentRest .. " fatigue restored.")
-            end
-            timer.delayOneFrame(haltSTrigger, timer.real)
-            log:info("Spell purchased. Player Intelligence: " ..
-                tes3.mobilePlayer.intelligence.current ..
-                ". NPC Intelligence: " .. npcMob.intelligence.current .. ". Time Reduction: " ..
-                (totalOffset * 100) .. " percent. Time passed to " .. math.round(gameHour, 2) .. ".")
+        local baseNPCspell = (config.spellNPC_Modifier * 0.1)
+        local npcMob = tes3ui.getServiceActor()
+        local intelligenceOffsetNPC = (npcMob.intelligence.current / 500)
+        local intelligenceOffsetPlayer = (tes3.mobilePlayer.intelligence.current / 200)
+        local totalOffset = intelligenceOffsetNPC + intelligenceOffsetPlayer
+        local gameHour = tes3.getGlobal('GameHour')
+        local spellTime = (baseNPCspell * (1 - totalOffset))
+        if spellTime < 0.02 then
+            spellTime = 0.02
         end
+        gameHour = (gameHour + spellTime)
+        tes3.setGlobal('GameHour', gameHour)
+        if config.restMode == true then
+            local pFatigue = tes3.player.mobile.fatigue
+            local fortifyEffect = tes3.getEffectMagnitude({
+                reference = tes3.player,
+                effect = tes3.effect.fortifyFatigue,
+            })
+            log:debug("Fortify Fatigue magnitude: " .. fortifyEffect .. ".")
+            local fatigueMax = (pFatigue.base + fortifyEffect)
+            local percentRest = (math.round(((fatigueMax * 0.01) * (spellTime * 100)), 0))
+            local fatigueFinal = (pFatigue.current + percentRest)
+            if fatigueFinal > fatigueMax then
+                fatigueFinal = fatigueMax
+            end
+            tes3.setStatistic({ name = "fatigue", current = fatigueFinal, reference = tes3.mobilePlayer })
+            log:debug("Resting while NPC teaches spell. " .. percentRest .. " fatigue restored.")
+        end
+        log:info("Spell purchased. Player Intelligence: " ..
+            tes3.mobilePlayer.intelligence.current ..
+            ". NPC Intelligence: " .. npcMob.intelligence.current .. ". Time Reduction: " ..
+            (totalOffset * 100) .. " percent. Time passed to " .. math.round(gameHour, 2) .. ".")
     end
 end
 
-local function spellByNPCbridge(e)
-    spellFlag = 1
-    if event.isRegistered(tes3.event.uiActivated, spellByNPCreal, { filter = "MenuServiceSpells" }) then return end
-    if config.advanceTimeNPCspell == true then
-        event.register(tes3.event.uiActivated, spellByNPCreal, { filter = "MenuServiceSpells" })
-    end
-end
-
-local function spellByNPC(e)
-    local closeButton = e.element:findChild(tes3ui.registerID("MenuServiceSpells_Okbutton"))
-    closeButton:registerAfter("mouseDown", function()
-        spellFlag = 0
-    end)
-    if config.advanceTimeNPCspell == true then
-        timer.start({ duration = 1, callback = spellByNPCbridge, type = timer.real })
-    end
-end
-
-event.register(tes3.event.uiActivated, spellByNPC, { filter = "MenuServiceSpells" })
-
-
-
---Bartering--
+--Bartering----------------------------------------------------------------------------------------------------------
 
 local function npcBarter(e)
+    log:trace("npcBarter function triggered.")
     if config.advanceTimeBarter ~= true then return end
     local gameHour = tes3.getGlobal('GameHour')
     gameHour = gameHour + (1 / 60)
     tes3.setGlobal('GameHour', gameHour)
     if config.restMode == true then
-        local fatigue = tes3.player.mobile.fatigue.current
-        local fatigueMax = tes3.player.mobile.fatigue.base
+        local pFatigue = tes3.player.mobile.fatigue
+        local fortifyEffect = tes3.getEffectMagnitude({
+            reference = tes3.player,
+            effect = tes3.effect.fortifyFatigue,
+        })
+        log:debug("Fortify Fatigue magnitude: " .. fortifyEffect .. ".")
+        local fatigueMax = (pFatigue.base + fortifyEffect)
         local percentRest = (math.round((fatigueMax * 0.02), 0))
-        local fatigueFinal = (fatigue + percentRest)
+        local fatigueFinal = (pFatigue.current + percentRest)
         if fatigueFinal > fatigueMax then
             fatigueFinal = fatigueMax
         end
@@ -545,20 +481,29 @@ event.register(tes3.event.barterOffer, npcBarter)
 
 
 
---Talking--
+--Talking--------------------------------------------------------------------------------------------------------------------
 
 local function npcChatter(e)
+    log:trace("npcChatter function triggered.")
     if (e.info.type == 1 or e.info.type == 2 or e.info.type == 4) then return end
     if config.advanceTimeChat ~= true then return end
     local gameHour = tes3.getGlobal('GameHour')
+    if config.chatMin > config.chatMax then
+        config.chatMin = config.chatMax
+    end
     local randNum = math.random(config.chatMin, config.chatMax)
     gameHour = (gameHour + (randNum / 60))
     tes3.setGlobal('GameHour', gameHour)
     if config.restMode == true then
-        local fatigue = tes3.player.mobile.fatigue.current
-        local fatigueMax = tes3.player.mobile.fatigue.base
+        local pFatigue = tes3.player.mobile.fatigue
+        local fortifyEffect = tes3.getEffectMagnitude({
+            reference = tes3.player,
+            effect = tes3.effect.fortifyFatigue,
+        })
+        log:debug("Fortify Fatigue magnitude: " .. fortifyEffect .. ".")
+        local fatigueMax = (pFatigue.base + fortifyEffect)
         local percentRest = (math.round(((fatigueMax * 0.02) * randNum), 0))
-        local fatigueFinal = (fatigue + percentRest)
+        local fatigueFinal = (pFatigue.current + percentRest)
         if fatigueFinal > fatigueMax then
             fatigueFinal = fatigueMax
         end
@@ -568,31 +513,218 @@ local function npcChatter(e)
     log:info("Chatting for " .. randNum .. " minute(s). Time passed to " .. math.round(gameHour, 2) .. ".")
 end
 
-event.register(tes3.event.infoGetText, npcChatter)
+local function npcChatterRegister()
+    log:trace("npcChatterRegister function triggered.")
+    if event.isRegistered(tes3.event.infoGetText, npcChatter) then return end
+    event.register(tes3.event.infoGetText, npcChatter)
+end
 
---Searching Containers--
+event.register("uiActivated", npcChatterRegister, { filter = "MenuDialog" })
+
+
+--Searching Containers----------------------------------------------------------------------------------------------------------------
 
 local function rummage()
+    log:trace("rummage function triggered.")
     if tes3ui.menuMode() then
         local menu = tes3ui.getMenuOnTop()
         if menu.name ~= "MenuContents" then return end
         local gameHour = tes3.getGlobal('GameHour')
         gameHour = (gameHour + (1 / 60))
         tes3.setGlobal('GameHour', gameHour)
-        log:debug("Time passed while searching container! Time passed to " .. math.round(gameHour, 2) .. ".")
+        log:info("Time passed while searching container! Time passed to " .. math.round(gameHour, 2) .. ".")
     end
 end
 
 local function onSearch(e)
+    log:trace("onSearch function triggered.")
     if e.activator ~= tes3.player then return end
     local objRef = e.target
-    if objRef.object.objectType ~= tes3.objectType.container then return end
-    if objRef.isEmpty == true then return end
+    local switch = 0
+    if config.lootTime == true then
+        if objRef.object.objectType == tes3.objectType.container then
+            switch = 1
+        end
+    end
+    if config.bodyTime == true then
+        if (objRef.object.objectType == tes3.objectType.npc or objRef.object.objectType == tes3.objectType.creature) then
+            switch = 1
+        end
+    end
+    if (switch == 0 or objRef.isEmpty == true) then return end
     timer.start({ type = timer.real, duration = 0.6, callback = rummage })
     log:debug("Container search timer began.")
 end
 
 event.register(tes3.event.activate, onSearch)
+
+--Right Click Menu Exit Compatibility-------------------------------------------------------------------------------------------------------------
+
+local function menuCheck()
+    log:trace("menuCheck function triggered.")
+    local topMenu = tes3ui.getMenuOnTop()
+    if topMenu.name ~= "MenuRepair" then
+        if event.isRegistered(tes3.event.uiActivated, onRepairAttempt) then
+            log:trace("onRepairAttempt function is registered. Unregistering.")
+            event.unregister(tes3.event.uiActivated, onRepairAttempt)
+        end
+    end
+    if topMenu.name ~= "MenuServiceRepair" then
+        if event.isRegistered(tes3.event.uiActivated, onRepairService, { filter = "MenuServiceRepair" }) then
+            log:trace("onRepairService function is registered. Unregistering.")
+            event.unregister(tes3.event.uiActivated, onRepairService, { filter = "MenuServiceRepair" })
+        end
+    end
+    if topMenu.name ~= "MenuServiceSpells" then
+        if event.isRegistered(tes3.event.uiActivated, onSpellService, { filter = "MenuServiceSpells" }) then
+            log:trace("onSpellService function is registered. Unregistering.")
+            event.unregister(tes3.event.uiActivated, onSpellService, { filter = "MenuServiceSpells" })
+        end
+    end
+end
+
+local function onMouseButtonDown(e)
+    log:trace("onMouseButtonDown function triggered.")
+    if e.button == tes3.worldController.inputController.inputMaps[19].code then
+        timer.start({ duration = 0.6, callback = menuCheck, type = timer.real })
+    end
+end
+
+--Register Switches--------------------------------------------------------------------------------------------------------------------
+
+--Player Repairs--
+local function repairAttemptBridge(e)
+    log:trace("repairAttemptBridge function triggered.")
+    if event.isRegistered(tes3.event.uiActivated, onRepairAttempt) then return end
+    log:trace("onRepairAttempt function unregistered. Registering.")
+    event.register(tes3.event.uiActivated, onRepairAttempt)
+end
+
+local function repairAttemptRegister(e)
+    log:trace("repairAttemptRegister function triggered.")
+    local closeRButton = e.element:findChild(tes3ui.registerID("MenuRepair_Okbutton"))
+    closeRButton:registerAfter("mouseDown", function()
+        log:trace("repairAttemptCloseButton function triggered.")
+        if event.isRegistered(tes3.event.exerciseSkill, enchantRecharge) then
+            log:trace("enchantRecharge function is registered. Unregistering.")
+            event.unregister(tes3.event.exerciseSkill, enchantRecharge)
+        end
+        if event.isRegistered(tes3.event.uiActivated, onRepairAttempt) then
+            log:trace("onRepairAttempt function is registered. Unregistering.")
+            event.unregister(tes3.event.uiActivated, onRepairAttempt)
+        end
+        if event.isRegistered("mouseButtonDown", onMouseButtonDown) then
+            log:trace("mouseButtonDown function registered. Unregistering.")
+            event.unregister("mouseButtonDown", onMouseButtonDown)
+        end
+        repairTrigger = 1
+    end)
+    timer.start({ duration = 0.6, callback = repairAttemptBridge, type = timer.real })
+    repairTrigger = 1
+    if event.isRegistered("mouseButtonDown", onMouseButtonDown) == false then
+        log:trace("mouseButtonDown function unregistered. Registering.")
+        event.register("mouseButtonDown", onMouseButtonDown)
+    end
+    if event.isRegistered(tes3.event.exerciseSkill, enchantRecharge) then return end
+    event.register(tes3.event.exerciseSkill, enchantRecharge)
+end
+
+event.register(tes3.event.uiActivated, repairAttemptRegister, { filter = "MenuRepair" })
+
+local function menuMessage(e)
+    log:trace("menuMessage function triggered.")
+    repairTrigger = 0
+end
+
+event.register(tes3.event.uiActivated, menuMessage, { filter = "MenuMessage" })
+
+--NPC Repairs--
+local function repairServiceRegister(e)
+    log:trace("repairServiceRegister function triggered.")
+    local closeButton = e.element:findChild(tes3ui.registerID("MenuServiceRepair_Okbutton"))
+    closeButton:registerAfter("mouseDown", function()
+        if event.isRegistered(tes3.event.uiActivated, onRepairService, { filter = "MenuServiceRepair" }) then
+            log:trace("onRepairService function is registered. Unregistering.")
+            event.unregister(tes3.event.uiActivated, onRepairService, { filter = "MenuServiceRepair" })
+        end
+        if event.isRegistered("mouseButtonDown", onMouseButtonDown) then
+            log:trace("mouseButtonDown function registered. Unregistering.")
+            event.unregister("mouseButtonDown", onMouseButtonDown)
+        end
+    end)
+    if event.isRegistered(tes3.event.uiActivated, onRepairService, { filter = "MenuServiceRepair" }) == false then
+        log:trace("onRepairService function unregistered. Registering.")
+        event.register(tes3.event.uiActivated, onRepairService, { filter = "MenuServiceRepair" })
+    end
+    if event.isRegistered("mouseButtonDown", onMouseButtonDown) == false then
+        log:trace("mouseButtonDown function unregistered. Registering.")
+        event.register("mouseButtonDown", onMouseButtonDown)
+    end
+end
+
+event.register(tes3.event.uiActivated, repairServiceRegister, { filter = "MenuServiceRepair" })
+
+--NPC Spell Service--
+local function spellServiceRegister(e)
+    log:trace("spellServiceRegister function triggered.")
+    local closeButton = e.element:findChild(tes3ui.registerID("MenuServiceSpells_Okbutton"))
+    closeButton:registerAfter("mouseDown", function()
+        if event.isRegistered(tes3.event.uiActivated, onSpellService, { filter = "MenuServiceSpells" }) then
+            log:trace("onSpellService function registered. Unregistering.")
+            event.unregister(tes3.event.uiActivated, onSpellService, { filter = "MenuServiceSpells" })
+        end
+        if event.isRegistered("mouseButtonDown", onMouseButtonDown) then
+            log:trace("mouseButtonDown function registered. Unregistering.")
+            event.unregister("mouseButtonDown", onMouseButtonDown)
+        end
+    end)
+    if event.isRegistered(tes3.event.uiActivated, onSpellService, { filter = "MenuServiceSpells" }) == false then
+        log:trace("onSpellService function unregistered. Registering.")
+        event.register(tes3.event.uiActivated, onSpellService, { filter = "MenuServiceSpells" })
+    end
+    if event.isRegistered("mouseButtonDown", onMouseButtonDown) == false then
+        log:trace("mouseButtonDown function unregistered. Registering.")
+        event.register("mouseButtonDown", onMouseButtonDown)
+    end
+end
+
+event.register(tes3.event.uiActivated, spellServiceRegister, { filter = "MenuServiceSpells" })
+
+--Menu Exit--
+local function onMenuExit(e)
+    log:trace("onMenuExit function triggered.")
+    repairTrigger = 1
+    if event.isRegistered(tes3.event.exerciseSkill, enchantRecharge) then
+        log:trace("enchantRecharge function is registered. Unregistering.")
+        event.unregister(tes3.event.exerciseSkill, enchantRecharge)
+    end
+    if event.isRegistered(tes3.event.uiActivated, onRepairAttempt) then
+        log:trace("onRepairAttempt function is registered. Unregistering.")
+        event.unregister(tes3.event.uiActivated, onRepairAttempt)
+    end
+    if event.isRegistered(tes3.event.infoGetText, npcChatter) then
+        log:trace("npcChatter function is registered. Unregistering.")
+        event.unregister(tes3.event.infoGetText, npcChatter)
+    end
+    if event.isRegistered(tes3.event.uiActivated, onRepairService, { filter = "MenuServiceRepair" }) then
+        log:trace("onRepairService function is registered. Unregistering.")
+        event.unregister(tes3.event.uiActivated, onRepairService, { filter = "MenuServiceRepair" })
+    end
+    if event.isRegistered(tes3.event.uiActivated, onSpellService, { filter = "MenuServiceSpells" }) then
+        log:trace("onSpellService function registered. Unregistering.")
+        event.unregister(tes3.event.uiActivated, onSpellService, { filter = "MenuServiceSpells" })
+    end
+    if event.isRegistered("mouseButtonDown", onMouseButtonDown) then
+        log:trace("mouseButtonDown function is registered. Unregistering.")
+        event.unregister("mouseButtonDown", onMouseButtonDown)
+    end
+end
+
+event.register(tes3.event.menuExit, onMenuExit)
+
+
+
+
 
 --Config Stuff--
 

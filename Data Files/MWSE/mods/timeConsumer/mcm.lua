@@ -17,7 +17,7 @@ local function createPage(label)
         noScroll = false,
     }
     page.sidebar:createInfo {
-        text = "                         -Time Consumer- \n\nThis mod passes time when the player enchants, repairs, performs alchemy, barters, chats, makes/buys a spell, or searches a container. Each feature can be enabled or disabled. Can be used alone for immersion or with other mods that introduce time-sensitive mechanics. \n\nAll sliders (except for talking time) are in tenths of an hour (A value of 10 = 1 hour, 55 = 5.5 hours, 3 = 0.3 hours)."
+        text = "                         -Time Consumer- \n\nThis mod passes time when the player enchants, repairs, performs alchemy, barters, chats, makes/buys a spell, or searches a container or corpse. Each feature can be enabled or disabled. Can be used alone for immersion or with other mods that introduce time-sensitive mechanics. \n\nAll sliders (except for talking time) are in tenths of an hour (A value of 10 = 1 hour, 55 = 5.5 hours, 3 = 0.3 hours)."
     }
     page.sidebar:createHyperLink {
         text = "Made by Kleidium",
@@ -41,9 +41,15 @@ local playerSettings = createPage("Player Settings")
 local miscSettings = settings:createCategory("Misc. Settings")
 
 miscSettings:createOnOffButton {
-    label = "Enable Consumed Time when Looting",
-    description = "Turn on or off time consumption when looting non-empty containers, including corpses. Searching a container consumes 1 minute.",
+    label = "Enable Consumed Time when Looting Containers",
+    description = "Turn on or off time consumption when looting non-empty containers. Searching a container consumes 1 minute.",
     variable = mwse.mcm.createTableVariable { id = "lootTime", table = config }
+}
+
+miscSettings:createOnOffButton {
+    label = "Enable Consumed Time when Looting Corpses",
+    description = "Turn on or off time consumption when looting non-empty corpses. Searching a corpse consumes 1 minute.",
+    variable = mwse.mcm.createTableVariable { id = "bodyTime", table = config }
 }
 
 miscSettings:createOnOffButton {
@@ -287,7 +293,7 @@ barterTime:createSlider {
     label = "Minimum talk time",
     description = "The minimum amount of time (in minutes) speaking will consume per instance.",
     max = 20,
-    min = 1,
+    min = 0,
     variable = EasyMCM:createTableVariable {
         id = "chatMin",
         table = config

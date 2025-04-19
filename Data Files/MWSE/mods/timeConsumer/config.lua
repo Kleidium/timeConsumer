@@ -25,6 +25,7 @@ local defaultConfig = {
 	chatMin = 1,
 	chatMax = 3,
 	lootTime = true,
+	bodyTime = true,
 	restMode = true,
 	trainSkill = true,
 	logLevel = "NONE"
